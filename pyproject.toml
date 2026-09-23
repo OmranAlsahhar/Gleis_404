@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Public transit punctuality analyzer: collects realtime departures from the Transitous API, stores delay history in SQLite, and reports and plots punctuality trends."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "httpx>=0.28.1",
+]
 
 [build-system]
 requires = ["hatchling"]
