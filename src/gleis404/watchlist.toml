@@ -1,0 +1,34 @@
+# Default gleis404 collection configuration.
+#
+# These four Dortmund stops are bundled with the package so the tool
+# works out of the box. To watch different stations or change the
+# interval, copy this file, edit it, and pass it with:
+#
+#     uv run -m gleis404 collect --config my-watchlist.toml
+
+# Seconds between collection cycles.
+interval_seconds = 300
+
+# SQLite database location, relative to the working directory.
+database = "data/gleis404.db"
+
+# Departures to fetch per station and cycle. With a five-minute
+# interval this covers each departure through several cycles before
+# it actually leaves.
+results = 20
+
+[[stations]]
+id = "at-Railway-Current-Reference-Data-2026_de:05913:131:90:10"
+name = "Dortmund Hbf"
+
+[[stations]]
+id = "de-DELFI_de:05913:36:21:21"
+name = "Dortmund An der Palmweide"
+
+[[stations]]
+id = "de-DELFI_de:05913:472"
+name = "Dortmund Universität"
+
+[[stations]]
+id = "de-DELFI_de:05913:526"
+name = "Dortmund Stadtgarten"
