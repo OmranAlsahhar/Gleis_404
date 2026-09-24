@@ -41,6 +41,26 @@ from gleis404.storage import (
 
 __version__ = "0.1.0"
 
+_PLOTTING_EXPORTS = frozenset(
+    {
+        "DEFAULT_PLOTS_DIR",
+        "plot_delay_by_line",
+        "plot_delay_distribution",
+        "plot_delay_heatmap",
+        "plot_punctuality_trend",
+    }
+)
+
+
+def __getattr__(name: str) -> object:
+    """Lazily expose gleis404.plotting members (PEP 562)."""
+    if name in _PLOTTING_EXPORTS:
+        from gleis404 import plotting
+
+        return getattr(plotting, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 __all__ = [
     "DEFAULT_DB_PATH",
     "PUNCTUALITY_THRESHOLD_SECONDS",
@@ -71,6 +91,10 @@ __all__ = [
     "parse_departure",
     "parse_departures",
     "parse_stop",
+    "plot_delay_by_line",
+    "plot_delay_distribution",
+    "plot_delay_heatmap",
+    "plot_punctuality_trend",
     "summarize",
     "with_overrides",
 ]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -99,38 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Only realtime-confirmed delays are counted."
         ),
     )
-    stats_parser.add_argument(
-        "--db",
-        metavar="PATH",
-        help="SQLite database path to analyze instead of the configured one",
-    )
-    stats_parser.add_argument(
-        "--config",
-        metavar="PATH",
-        help="watchlist TOML to resolve the default database path from",
-    )
-    stats_parser.add_argument(
-        "--line",
-        metavar="LINE",
-        help="only analyze this line (case-insensitive exact match)",
-    )
-    stats_parser.add_argument(
-        "--stop",
-        metavar="NAME",
-        help="only analyze stations whose name contains this text",
-    )
-    stats_parser.add_argument(
-        "--since",
-        type=_parse_day,
-        metavar="YYYY-MM-DD",
-        help="only analyze departures from this date (inclusive)",
-    )
-    stats_parser.add_argument(
-        "--until",
-        type=_parse_until_day,
-        metavar="YYYY-MM-DD",
-        help="only analyze departures up to this date (inclusive)",
-    )
+    _add_data_args(stats_parser)
     stats_parser.add_argument(
         "--top",
         type=int,
@@ -139,7 +109,67 @@ def build_parser() -> argparse.ArgumentParser:
         help="lines to show in the by-line table (default: 10)",
     )
     stats_parser.set_defaults(func=_cmd_stats)
+
+    plot_parser = subparsers.add_parser(
+        "plot",
+        help="save delay visualizations as PNG files",
+        description=(
+            "Generate delay distribution, heatmap, per-line box chart "
+            "and daily trend figures from the collected departures "
+            "and save them as PNG files."
+        ),
+    )
+    _add_data_args(plot_parser)
+    plot_parser.add_argument(
+        "--outdir",
+        metavar="DIR",
+        help="directory for generated PNGs (default: plots)",
+    )
+    plot_parser.add_argument(
+        "--top",
+        type=int,
+        default=10,
+        metavar="N",
+        help="lines to include in the by-line chart (default: 10)",
+    )
+    plot_parser.set_defaults(func=_cmd_plot)
     return parser
+
+
+def _add_data_args(parser: argparse.ArgumentParser) -> None:
+    """Add the database and filter options shared by data subcommands."""
+    parser.add_argument(
+        "--db",
+        metavar="PATH",
+        help="SQLite database path instead of the configured one",
+    )
+    parser.add_argument(
+        "--config",
+        metavar="PATH",
+        help="watchlist TOML to resolve the default database path from",
+    )
+    parser.add_argument(
+        "--line",
+        metavar="LINE",
+        help="only analyze this line (case-insensitive exact match)",
+    )
+    parser.add_argument(
+        "--stop",
+        metavar="NAME",
+        help="only analyze stations whose name contains this text",
+    )
+    parser.add_argument(
+        "--since",
+        type=_parse_day,
+        metavar="YYYY-MM-DD",
+        help="only analyze departures from this date (inclusive)",
+    )
+    parser.add_argument(
+        "--until",
+        type=_parse_until_day,
+        metavar="YYYY-MM-DD",
+        help="only analyze departures up to this date (inclusive)",
+    )
 
 
 def _parse_day(value: str, *, end_of_range: bool = False) -> datetime:
@@ -378,6 +408,60 @@ def _cmd_stats(args: argparse.Namespace) -> int:
             top_lines=max(1, args.top),
         )
     )
+    return 0
+
+
+def _cmd_plot(args: argparse.Namespace) -> int:
+    """Run the plot subcommand."""
+    config = load_config(Path(args.config) if args.config else None)
+    db_path = Path(args.db) if args.db else config.database
+    with Database(db_path) as db:
+        departures = db.query_departures()
+    departures = _filter_departures(departures, args)
+    if not departures:
+        print(
+            "No departures match. Run "
+            "'uv run -m gleis404 collect --once' first."
+        )
+        return 1
+
+    from gleis404.plotting import (
+        DEFAULT_PLOTS_DIR,
+        plot_delay_by_line,
+        plot_delay_distribution,
+        plot_delay_heatmap,
+        plot_punctuality_trend,
+    )
+
+    outdir = Path(args.outdir) if args.outdir else DEFAULT_PLOTS_DIR
+    top = max(1, args.top)
+    jobs: dict[str, Callable[[Path], Path | None]] = {
+        "delay_distribution.png": lambda p: plot_delay_distribution(
+            departures, p
+        ),
+        "delay_heatmap.png": lambda p: plot_delay_heatmap(departures, p),
+        "delay_by_line.png": lambda p: plot_delay_by_line(
+            departures, p, top_n=top
+        ),
+        "punctuality_trend.png": lambda p: plot_punctuality_trend(
+            departures, p
+        ),
+    }
+    saved: list[Path] = []
+    skipped: list[str] = []
+    for filename, job in jobs.items():
+        result = job(outdir / filename)
+        if result is None:
+            skipped.append(filename)
+        else:
+            saved.append(result)
+            print(f"saved     {result}")
+    for filename in skipped:
+        print(f"skipped   {filename} (not enough data for this figure)")
+    if not saved:
+        print("No figure could be generated from the available data.")
+        return 1
+    print(f"{len(saved)} figure(s) written to {outdir}/")
     return 0
 
 
