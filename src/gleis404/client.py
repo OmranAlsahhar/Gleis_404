@@ -8,6 +8,8 @@ from typing import Any, Self
 
 import httpx
 
+from gleis404.settings import load_settings, pick
+
 DEFAULT_BASE_URL = "https://api.transitous.org"
 DEFAULT_USER_AGENT = "gleis404/0.1.0 (https://github.com/OmranAlsahhar/Gleis_404)"
 
@@ -169,16 +171,19 @@ class TransitousClient:
 
     def __init__(
         self,
-        base_url: str = DEFAULT_BASE_URL,
-        user_agent: str = DEFAULT_USER_AGENT,
-        timeout: float = 15.0,
+        base_url: str | None = None,
+        user_agent: str | None = None,
+        timeout: float | None = None,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         """Create a client."""
+        settings = load_settings()
         self._client = httpx.Client(
-            base_url=base_url,
-            headers={"User-Agent": user_agent},
-            timeout=timeout,
+            base_url=pick(base_url, settings.api_base_url, DEFAULT_BASE_URL),
+            headers={
+                "User-Agent": pick(user_agent, settings.user_agent, DEFAULT_USER_AGENT)
+            },
+            timeout=pick(timeout, settings.timeout, 15.0),
             transport=transport,
         )
 

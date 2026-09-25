@@ -10,7 +10,6 @@ from pathlib import Path
 
 from gleis404 import __version__
 from gleis404.analysis import (
-    LOCAL_TIMEZONE,
     GroupStats,
     PunctualityReport,
     by_day,
@@ -21,6 +20,7 @@ from gleis404.analysis import (
     default_timezone,
     local_window,
     summarize,
+    timezone_label,
 )
 from gleis404.client import Departure, TransitousClient
 from gleis404.collector import (
@@ -30,6 +30,7 @@ from gleis404.collector import (
     load_config,
     with_overrides,
 )
+from gleis404.settings import Settings, load_settings, pick
 from gleis404.storage import Database
 
 __all__ = [
@@ -103,9 +104,9 @@ def build_parser() -> argparse.ArgumentParser:
     stats_parser.add_argument(
         "--top",
         type=int,
-        default=10,
+        default=None,
         metavar="N",
-        help="lines to show in the by-line table (default: 10)",
+        help="lines to show in the by-line table (default: GLEIS404_TOP or 10)",
     )
     stats_parser.set_defaults(func=_cmd_stats)
 
@@ -122,14 +123,14 @@ def build_parser() -> argparse.ArgumentParser:
     plot_parser.add_argument(
         "--outdir",
         metavar="DIR",
-        help="directory for generated PNGs (default: plots)",
+        help="directory for generated PNGs (default: GLEIS404_PLOTS_DIR or plots)",
     )
     plot_parser.add_argument(
         "--top",
         type=int,
-        default=10,
+        default=None,
         metavar="N",
-        help="lines to include in the by-line chart (default: 10)",
+        help="lines to include in the by-line chart (default: GLEIS404_TOP or 10)",
     )
     plot_parser.set_defaults(func=_cmd_plot)
     return parser
@@ -207,14 +208,31 @@ def _open_resources(config: CollectorConfig) -> tuple[Database, TransitousClient
     return Database(config.database), TransitousClient()
 
 
+def _resolve_db(
+    args: argparse.Namespace, settings: Settings, config: CollectorConfig
+) -> Path:
+    """Pick the database path: CLI flag, then .env, then the TOML."""
+    chosen = pick(
+        Path(args.db) if args.db else None, settings.database, config.database
+    )
+    assert chosen is not None
+    return chosen
+
+
+def _resolve_top(value: int | None, settings: Settings) -> int:
+    """Pick the by-line limit: CLI flag, then .env, then 10."""
+    return max(1, pick(value, settings.top, 10) or 10)
+
+
 def _cmd_collect(args: argparse.Namespace) -> int:
     """Run the collect subcommand."""
+    settings = load_settings()
     config = load_config(Path(args.config) if args.config else None)
     config = with_overrides(
         config,
-        interval=args.interval,
-        results=args.results,
-        database=Path(args.db) if args.db else None,
+        interval=pick(args.interval, settings.interval_seconds),
+        results=pick(args.results, settings.results),
+        database=Path(args.db) if args.db else settings.database,
     )
     db, client = _open_resources(config)
     try:
@@ -314,7 +332,7 @@ def _render_report(
     if window is not None:
         out.append(
             f"window   : {window[0]:%Y-%m-%d %H:%M} → "
-            f"{window[1]:%Y-%m-%d %H:%M} ({LOCAL_TIMEZONE})"
+            f"{window[1]:%Y-%m-%d %H:%M} ({timezone_label()})"
         )
     out.append(
         f"records  : {report.total} total | {report.known} with realtime "
@@ -370,8 +388,9 @@ def _filter_departures(
 
 def _cmd_stats(args: argparse.Namespace) -> int:
     """Run the stats subcommand."""
+    settings = load_settings()
     config = load_config(Path(args.config) if args.config else None)
-    db_path = Path(args.db) if args.db else config.database
+    db_path = _resolve_db(args, settings, config)
     with Database(db_path) as db:
         departures = db.query_departures()
     departures = _filter_departures(departures, args)
@@ -389,7 +408,7 @@ def _cmd_stats(args: argparse.Namespace) -> int:
             weekdays=by_weekday(departures),
             days=by_day(departures),
             window=local_window(departures),
-            top_lines=max(1, args.top),
+            top_lines=_resolve_top(args.top, settings),
         )
     )
     return 0
@@ -397,8 +416,9 @@ def _cmd_stats(args: argparse.Namespace) -> int:
 
 def _cmd_plot(args: argparse.Namespace) -> int:
     """Run the plot subcommand."""
+    settings = load_settings()
     config = load_config(Path(args.config) if args.config else None)
-    db_path = Path(args.db) if args.db else config.database
+    db_path = _resolve_db(args, settings, config)
     with Database(db_path) as db:
         departures = db.query_departures()
     departures = _filter_departures(departures, args)
@@ -414,8 +434,11 @@ def _cmd_plot(args: argparse.Namespace) -> int:
         plot_punctuality_trend,
     )
 
-    outdir = Path(args.outdir) if args.outdir else DEFAULT_PLOTS_DIR
-    top = max(1, args.top)
+    outdir = (
+        pick(Path(args.outdir) if args.outdir else None, settings.plots_dir)
+        or DEFAULT_PLOTS_DIR
+    )
+    top = _resolve_top(args.top, settings)
     jobs: dict[str, Callable[[Path], Path | None]] = {
         "delay_distribution.png": lambda p: plot_delay_distribution(departures, p),
         "delay_heatmap.png": lambda p: plot_delay_heatmap(departures, p),

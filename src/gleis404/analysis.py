@@ -9,12 +9,14 @@ from datetime import UTC, datetime, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from gleis404.client import Departure
+from gleis404.settings import load_settings
 
 PUNCTUALITY_THRESHOLD_SECONDS = 300
 """A delay of at most five minutes still counts as punctual."""
 
 LOCAL_TIMEZONE = "Europe/Berlin"
-"""Timezone used for hour-of-day and weekday breakdowns."""
+"""Default timezone for hour-of-day and weekday breakdowns; the
+``GLEIS404_TIMEZONE`` environment setting can replace it."""
 
 WEEKDAY_NAMES: tuple[str, ...] = (
     "Monday",
@@ -30,10 +32,16 @@ WEEKDAY_NAMES: tuple[str, ...] = (
 
 def default_timezone() -> tzinfo:
     """Return the local timezone used for time-based breakdowns."""
+    zone_name = timezone_label()
     try:
-        return ZoneInfo(LOCAL_TIMEZONE)
-    except ZoneInfoNotFoundError:
+        return ZoneInfo(zone_name)
+    except (ZoneInfoNotFoundError, ValueError):
         return UTC
+
+
+def timezone_label() -> str:
+    """Return the name of the timezone used for local-time analysis."""
+    return load_settings().timezone or LOCAL_TIMEZONE
 
 
 @dataclass(frozen=True, slots=True)
