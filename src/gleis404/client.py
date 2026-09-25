@@ -9,9 +9,7 @@ from typing import Any, Self
 import httpx
 
 DEFAULT_BASE_URL = "https://api.transitous.org"
-DEFAULT_USER_AGENT = (
-    "gleis404/0.1.0 (https://github.com/OmranAlsahhar/Gleis_404)"
-)
+DEFAULT_USER_AGENT = "gleis404/0.1.0 (https://github.com/OmranAlsahhar/Gleis_404)"
 
 
 class TransitousAPIError(Exception):
@@ -196,9 +194,7 @@ class TransitousClient:
 
     def departures(self, stop_id: str, n: int = 20) -> list[Departure]:
         """Fetch the next departures at a stop, including realtime delays."""
-        data = self._get_json(
-            "/api/v6/stoptimes", {"stopId": stop_id, "n": n}
-        )
+        data = self._get_json("/api/v6/stoptimes", {"stopId": stop_id, "n": n})
         return parse_departures(data)
 
     def _get_json(self, path: str, params: dict[str, Any]) -> Any:
@@ -206,13 +202,10 @@ class TransitousClient:
         try:
             response = self._client.get(path, params=params)
         except httpx.HTTPError as exc:
-            raise TransitousAPIError(
-                f"request to {path} failed: {exc}"
-            ) from exc
+            raise TransitousAPIError(f"request to {path} failed: {exc}") from exc
         if response.status_code != 200:
             raise TransitousAPIError(
-                f"request to {path} returned HTTP "
-                f"{response.status_code}",
+                f"request to {path} returned HTTP {response.status_code}",
                 status_code=response.status_code,
             )
         try:

@@ -196,9 +196,7 @@ class Database:
 
     def count_departures(self) -> int:
         """Return the total number of stored departure records."""
-        row = self._conn.execute(
-            "SELECT COUNT(*) AS n FROM departures"
-        ).fetchone()
+        row = self._conn.execute("SELECT COUNT(*) AS n FROM departures").fetchone()
         assert row is not None
         return int(row["n"])
 
@@ -212,9 +210,7 @@ class Database:
             line=row["line"],
             mode=row["mode"],
             headsign=row["headsign"],
-            scheduled_departure=datetime.fromisoformat(
-                row["scheduled_departure"]
-            ),
+            scheduled_departure=datetime.fromisoformat(row["scheduled_departure"]),
             departure=_time_from_db(row["departure"]),
             delay_seconds=row["delay_seconds"],
             real_time=bool(row["real_time"]),

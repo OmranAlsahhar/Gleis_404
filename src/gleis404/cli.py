@@ -43,8 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="gleis404",
         description=(
-            "Collect realtime public transit departures and analyze "
-            "punctuality trends."
+            "Collect realtime public transit departures and analyze punctuality trends."
         ),
     )
     parser.add_argument(
@@ -220,9 +219,7 @@ def _cmd_collect(args: argparse.Namespace) -> int:
     db, client = _open_resources(config)
     try:
         if args.once:
-            stats = collect_cycle(
-                config.stations, db, client, results=config.results
-            )
+            stats = collect_cycle(config.stations, db, client, results=config.results)
             print(_format_cycle(stats, next_in=None), flush=True)
             return 1 if stats.failures else 0
 
@@ -268,16 +265,18 @@ def _table(headers: list[str], rows: list[list[str]]) -> list[str]:
         else len(headers[i])
         for i in range(len(headers))
     ]
-    header_line = headers[0].ljust(widths[0]) + "  " + "  ".join(
-        title.rjust(widths[i])
-        for i, title in enumerate(headers[1:], start=1)
+    header_line = (
+        headers[0].ljust(widths[0])
+        + "  "
+        + "  ".join(
+            title.rjust(widths[i]) for i, title in enumerate(headers[1:], start=1)
+        )
     )
     rule = "  ".join("-" * width for width in widths)
     body = [
-        row[0].ljust(widths[0]) + "  " + "  ".join(
-            cell.rjust(widths[i])
-            for i, cell in enumerate(row[1:], start=1)
-        )
+        row[0].ljust(widths[0])
+        + "  "
+        + "  ".join(cell.rjust(widths[i]) for i, cell in enumerate(row[1:], start=1))
         for row in rows
     ]
     return [header_line, rule, *body]
@@ -344,11 +343,7 @@ def _render_report(
     out.append("")
     out.extend(_group_table("by station (busiest first)", stations))
     shown = lines[:top_lines]
-    out.extend(
-        _group_table(
-            f"by line (top {len(shown)} of {len(lines)})", shown
-        )
-    )
+    out.extend(_group_table(f"by line (top {len(shown)} of {len(lines)})", shown))
     out.extend(_group_table("by hour of day (local time)", hours))
     out.extend(_group_table("by weekday", weekdays))
     out.extend(_group_table("by day", days))
@@ -362,22 +357,14 @@ def _filter_departures(
     """Apply the stats filter options to loaded departures."""
     if args.line:
         wanted = args.line.casefold()
-        departures = [
-            d for d in departures if d.line.casefold() == wanted
-        ]
+        departures = [d for d in departures if d.line.casefold() == wanted]
     if args.stop:
         needle = args.stop.casefold()
-        departures = [
-            d for d in departures if needle in d.stop_name.casefold()
-        ]
+        departures = [d for d in departures if needle in d.stop_name.casefold()]
     if args.since:
-        departures = [
-            d for d in departures if d.scheduled_departure >= args.since
-        ]
+        departures = [d for d in departures if d.scheduled_departure >= args.since]
     if args.until:
-        departures = [
-            d for d in departures if d.scheduled_departure < args.until
-        ]
+        departures = [d for d in departures if d.scheduled_departure < args.until]
     return departures
 
 
@@ -390,10 +377,7 @@ def _cmd_stats(args: argparse.Namespace) -> int:
     departures = _filter_departures(departures, args)
 
     if not departures:
-        print(
-            "No departures match. Run "
-            "'uv run -m gleis404 collect --once' first."
-        )
+        print("No departures match. Run 'uv run -m gleis404 collect --once' first.")
         return 1
 
     print(
@@ -419,10 +403,7 @@ def _cmd_plot(args: argparse.Namespace) -> int:
         departures = db.query_departures()
     departures = _filter_departures(departures, args)
     if not departures:
-        print(
-            "No departures match. Run "
-            "'uv run -m gleis404 collect --once' first."
-        )
+        print("No departures match. Run 'uv run -m gleis404 collect --once' first.")
         return 1
 
     from gleis404.plotting import (
@@ -436,16 +417,10 @@ def _cmd_plot(args: argparse.Namespace) -> int:
     outdir = Path(args.outdir) if args.outdir else DEFAULT_PLOTS_DIR
     top = max(1, args.top)
     jobs: dict[str, Callable[[Path], Path | None]] = {
-        "delay_distribution.png": lambda p: plot_delay_distribution(
-            departures, p
-        ),
+        "delay_distribution.png": lambda p: plot_delay_distribution(departures, p),
         "delay_heatmap.png": lambda p: plot_delay_heatmap(departures, p),
-        "delay_by_line.png": lambda p: plot_delay_by_line(
-            departures, p, top_n=top
-        ),
-        "punctuality_trend.png": lambda p: plot_punctuality_trend(
-            departures, p
-        ),
+        "delay_by_line.png": lambda p: plot_delay_by_line(departures, p, top_n=top),
+        "punctuality_trend.png": lambda p: plot_punctuality_trend(departures, p),
     }
     saved: list[Path] = []
     skipped: list[str] = []

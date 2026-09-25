@@ -121,8 +121,7 @@ def summarize(departures: Sequence[Departure]) -> PunctualityReport:
     known = len(known_delays)
     no_realtime = total - cancelled - known
     punctual = sum(
-        1 for delay in known_delays
-        if delay <= PUNCTUALITY_THRESHOLD_SECONDS
+        1 for delay in known_delays if delay <= PUNCTUALITY_THRESHOLD_SECONDS
     )
     punctuality = punctual / known if known else None
     return PunctualityReport(
@@ -198,9 +197,7 @@ def by_weekday(
         departures,
         lambda d: WEEKDAY_NAMES[d.scheduled_departure.astimezone(zone).weekday()],
     )
-    return sorted(
-        groups, key=lambda g: WEEKDAY_NAMES.index(g.label)
-    )
+    return sorted(groups, key=lambda g: WEEKDAY_NAMES.index(g.label))
 
 
 def by_day(

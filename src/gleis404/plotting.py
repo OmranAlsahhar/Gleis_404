@@ -139,11 +139,7 @@ def plot_delay_by_line(
 ) -> Path | None:
     """Plot box charts of delays per line, busiest lines first."""
     stats = by_line(departures)
-    labels = [
-        group.label
-        for group in stats
-        if group.delay.count > 0
-    ][:top_n]
+    labels = [group.label for group in stats if group.delay.count > 0][:top_n]
     if not labels:
         return None
     lookup: dict[str, list[float]] = {label: [] for label in labels}
@@ -155,9 +151,7 @@ def plot_delay_by_line(
         ):
             lookup[departure.line].append(departure.delay_seconds / 60)
 
-    fig, ax = plt.subplots(
-        figsize=(8, max(3.5, 0.55 * len(labels) + 1.5))
-    )
+    fig, ax = plt.subplots(figsize=(8, max(3.5, 0.55 * len(labels) + 1.5)))
     ax.boxplot(
         [lookup[label] for label in labels],
         orientation="horizontal",
@@ -196,9 +190,7 @@ def plot_punctuality_trend(
         for group in days
     ]
     punctuality = [
-        group.punctuality * 100
-        if group.punctuality is not None
-        else math.nan
+        group.punctuality * 100 if group.punctuality is not None else math.nan
         for group in days
     ]
 

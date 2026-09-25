@@ -133,9 +133,7 @@ def collect_cycle(
         stats = db.insert_departures(departures)
         inserted += stats.inserted
         updated += stats.updated
-    return CycleStats(
-        inserted=inserted, updated=updated, failures=tuple(failures)
-    )
+    return CycleStats(inserted=inserted, updated=updated, failures=tuple(failures))
 
 
 def with_overrides(
