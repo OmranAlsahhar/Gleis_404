@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from dotenv import load_dotenv
 
 ENV_FILE_NAME = ".env"
-"""Environment file loaded from the working directory."""
+"""Environment file, found in the working directory or any parent."""
 
 ENV_PREFIX = "GLEIS404_"
 """Prefix of every configuration environment variable."""
@@ -47,7 +47,17 @@ class Settings:
 
 def load_env(path: Path | None = None) -> None:
     """Load a .env file into os.environ if it exists."""
-    target = path if path is not None else Path(ENV_FILE_NAME)
+    if path is not None:
+        target = path
+    else:
+        target = next(
+            (
+                directory / ENV_FILE_NAME
+                for directory in (Path.cwd(), *Path.cwd().parents)
+                if (directory / ENV_FILE_NAME).is_file()
+            ),
+            Path(ENV_FILE_NAME),
+        )
     if target.is_file():
         load_dotenv(target, override=False)
 
