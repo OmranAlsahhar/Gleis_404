@@ -112,6 +112,23 @@ def compute_delay_stats(delays: Sequence[int]) -> DelayStats:
     )
 
 
+def departed(
+    departures: Sequence[Departure],
+    *,
+    now: datetime | None = None,
+) -> list[Departure]:
+    """Drop departures whose scheduled time has not yet passed."""
+    cutoff = now if now is not None else datetime.now(UTC)
+    if cutoff.tzinfo is None:
+        cutoff = cutoff.replace(tzinfo=UTC)
+    return [d for d in departures if _instant(d.scheduled_departure) <= cutoff]
+
+
+def _instant(value: datetime) -> datetime:
+    """Interpret a timestamp as UTC, treating naive values as UTC."""
+    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+
 def _known_delays(departures: Sequence[Departure]) -> list[int]:
     """Collect trustworthy delays: realtime data and no cancellation."""
     return [

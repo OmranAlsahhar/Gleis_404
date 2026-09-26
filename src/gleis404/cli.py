@@ -18,6 +18,7 @@ from gleis404.analysis import (
     by_station,
     by_weekday,
     default_timezone,
+    departed,
     local_window,
     summarize,
     timezone_label,
@@ -372,7 +373,9 @@ def _filter_departures(
     departures: list[Departure],
     args: argparse.Namespace,
 ) -> list[Departure]:
-    """Apply the stats filter options to loaded departures."""
+    """Apply the stats/plot filter options to loaded departures."""
+    if not args.until:
+        departures = departed(departures)
     if args.line:
         wanted = args.line.casefold()
         departures = [d for d in departures if d.line.casefold() == wanted]
