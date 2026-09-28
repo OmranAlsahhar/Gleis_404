@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from importlib.resources import files
 from pathlib import Path
 
-from gleis404.client import TransitousAPIError, TransitousClient
+from gleis404.client import Departure, TransitousAPIError, TransitousClient
 from gleis404.storage import DEFAULT_DB_PATH, Database
 
 DEFAULT_CONFIG_NAME = "gleis404.toml"
@@ -114,13 +114,22 @@ def load_config(path: Path | None = None) -> CollectorConfig:
     return _parse_config(_read_builtin_config(), "built-in watchlist")
 
 
+def _keep_watched(station: Station, departures: Sequence[Departure]) -> list[Departure]:
+    """Drop departures the API attached to the station that leave from some other stop."""
+    if station.name == station.id:
+        return list(departures)
+    return [
+        departure for departure in departures if departure.stop_name == station.name
+    ]
+
+
 def collect_cycle(
     stations: Sequence[Station],
     db: Database,
     client: TransitousClient,
     results: int = DEFAULT_RESULTS,
 ) -> CycleStats:
-    """Poll every station once and persist the returned departures."""
+    """Poll every station once and persist only the departures at the watched stop."""
     inserted = 0
     updated = 0
     failures: list[str] = []
@@ -130,6 +139,7 @@ def collect_cycle(
         except TransitousAPIError as exc:
             failures.append(f"{station.name} ({exc})")
             continue
+        departures = _keep_watched(station, departures)
         stats = db.insert_departures(departures)
         inserted += stats.inserted
         updated += stats.updated
