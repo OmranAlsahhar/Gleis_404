@@ -27,7 +27,7 @@ Named after a track that doesn't exist (`Gleis 404`).
 
 ## Requirements
 
-- Python >= 3.12
+- Python >= 3.10
 - [uv](https://docs.astral.sh/uv/) (used for everything: deps, lock
   file, running)
 
