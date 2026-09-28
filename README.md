@@ -8,10 +8,6 @@ worst?*
 
 Named after a track that doesn't exist (`Gleis 404`).
 
-![Delay distribution](plots/delay_distribution.png)
-
-![Delay distribution by line](plots/delay_by_line.png)
-
 ## Features
 
 - **Continuous collection** — polls four Dortmund stops every five
