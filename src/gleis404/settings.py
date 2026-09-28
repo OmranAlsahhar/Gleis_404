@@ -6,7 +6,10 @@ import os
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeVar
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+_T = TypeVar("_T")
 
 from dotenv import load_dotenv
 
@@ -157,7 +160,7 @@ def load_settings() -> Settings:
     )
 
 
-def pick[T](*candidates: T | None) -> T | None:
+def pick(*candidates: _T | None) -> _T | None:
     """Return the first non-None candidate."""
     for candidate in candidates:
         if candidate is not None:

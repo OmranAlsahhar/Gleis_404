@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from importlib.resources import files

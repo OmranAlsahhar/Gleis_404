@@ -5,9 +5,10 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Self
+
+from typing_extensions import Self
 
 from gleis404.client import Departure
 
@@ -53,8 +54,8 @@ class WriteStats:
 def _to_utc(value: datetime) -> datetime:
     """Normalize a datetime to UTC, treating naive values as UTC."""
     if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _time_to_db(value: datetime | None) -> str | None:
@@ -98,7 +99,7 @@ class Database:
         """Insert departures, refreshing rows already collected earlier."""
         if not departures:
             return WriteStats(inserted=0, updated=0)
-        now = _time_to_db(collected_at or datetime.now(UTC))
+        now = _time_to_db(collected_at or datetime.now(timezone.utc))
         assert now is not None
 
         inserted = 0

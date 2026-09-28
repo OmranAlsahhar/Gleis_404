@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from gleis404 import __version__
@@ -192,7 +192,7 @@ def _parse_until_day(value: str) -> datetime:
 
 def _format_cycle(stats: CycleStats, next_in: int | None) -> str:
     """Render one cycle's result as a log line."""
-    stamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     line = (
         f"[{stamp}] {stats.inserted} new, {stats.updated} refreshed"
         f" ({len(stats.failures)} errors)"

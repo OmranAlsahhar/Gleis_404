@@ -3,12 +3,14 @@ name = "gleis404"
 version = "0.1.0"
 description = "Public transit punctuality analyzer: collects realtime departures from the Transitous API, stores delay history in SQLite, and reports and plots punctuality trends."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
     "httpx>=0.28.1",
-    "matplotlib>=3.11.2",
+    "matplotlib>=3.9",
     "python-dotenv>=1.2.3",
     "seaborn>=0.13.2",
+    "tomli>=2.0; python_version < '3.11'",
+  "typing-extensions>=4.0; python_version < '3.11'",
 ]
 
 [build-system]

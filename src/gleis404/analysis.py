@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime, tzinfo
+from datetime import datetime, timezone, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from gleis404.client import Departure
@@ -36,7 +36,7 @@ def default_timezone() -> tzinfo:
     try:
         return ZoneInfo(zone_name)
     except (ZoneInfoNotFoundError, ValueError):
-        return UTC
+        return timezone.utc
 
 
 def timezone_label() -> str:
@@ -118,15 +118,15 @@ def departed(
     now: datetime | None = None,
 ) -> list[Departure]:
     """Drop departures whose scheduled time has not yet passed."""
-    cutoff = now if now is not None else datetime.now(UTC)
+    cutoff = now if now is not None else datetime.now(timezone.utc)
     if cutoff.tzinfo is None:
-        cutoff = cutoff.replace(tzinfo=UTC)
+        cutoff = cutoff.replace(tzinfo=timezone.utc)
     return [d for d in departures if _instant(d.scheduled_departure) <= cutoff]
 
 
 def _instant(value: datetime) -> datetime:
     """Interpret a timestamp as UTC, treating naive values as UTC."""
-    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
 def _known_delays(departures: Sequence[Departure]) -> list[int]:

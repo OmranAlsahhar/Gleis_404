@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Self
+from typing import Any
 
 import httpx
+from typing_extensions import Self
 
 from gleis404.settings import load_settings, pick
 
